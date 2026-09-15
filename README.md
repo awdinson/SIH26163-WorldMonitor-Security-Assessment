@@ -47,3 +47,14 @@ using the application's published OpenAPI specification.
 ---
 
 ## Repository Structure
+| Folder | Contents |
+|--------|----------|
+| /findings | Documented vulnerabilities with evidence |
+| /dashboard | Security assessment reporting dashboard |
+| /scripts | Automated endpoint testing scripts |
+| /report | Final assessment report and PPT |
+
+## Solution: SecureScope Dashboard
+An interactive security assessment dashboard that visualizes 
+all findings with severity ratings, proof-of-concept evidence, 
+and remediation recommendations.
