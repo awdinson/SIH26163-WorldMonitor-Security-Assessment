@@ -54,7 +54,20 @@ using the application's published OpenAPI specification.
 | /scripts | Automated endpoint testing scripts |
 | /report | Final assessment report and PPT |
 
+---
+
 ## Solution: SecureScope Dashboard
 An interactive security assessment dashboard that visualizes 
 all findings with severity ratings, proof-of-concept evidence, 
 and remediation recommendations.
+
+---
+
+## Current Progress (Sept 19, 2026)
+- ✅ Target application mapped — 214 API endpoints analyzed
+- ✅ 6 vulnerabilities identified (3 Critical, 2 High, 1 Medium)
+- ✅ CVSS scores: 9.1, 9.1, 8.6, 7.5, 7.5, 5.3
+- ✅ Proof-of-concept documented with live evidence
+- ✅ SecureScope dashboard built — /dashboard/index.html
+- 🔄 Demo video in progress
+- 🔄 Final PDF submission in progress
