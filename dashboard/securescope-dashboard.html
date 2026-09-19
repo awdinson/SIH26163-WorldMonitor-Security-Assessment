@@ -1,0 +1,647 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SecureScope — World Monitor Security Assessment</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #0D1117;
+    --surface: #161B22;
+    --surface2: #1C2128;
+    --border: #30363D;
+    --text: #E6EDF3;
+    --text-muted: #7D8590;
+    --text-dim: #484F58;
+    --accent: #3FB950;
+    --accent-dim: #1A3C24;
+    --red: #F85149;
+    --red-dim: #3D1A1A;
+    --orange: #D29922;
+    --orange-dim: #3D2C00;
+    --yellow: #E3B341;
+    --yellow-dim: #2E2200;
+    --blue: #58A6FF;
+    --radius: 8px;
+    --radius-sm: 5px;
+  }
+
+  body {
+    font-family: 'Inter', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    font-size: 14px;
+    line-height: 1.6;
+  }
+
+  /* ── HEADER ── */
+  .header {
+    border-bottom: 1px solid var(--border);
+    background: var(--surface);
+    padding: 0 2rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 56px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+  .header-left { display: flex; align-items: center; gap: 12px; }
+  .logo { font-size: 16px; font-weight: 700; color: var(--text); letter-spacing: -0.3px; }
+  .logo span { color: var(--accent); }
+  .target-badge {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--text-muted);
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    padding: 3px 8px;
+    border-radius: var(--radius-sm);
+  }
+  .header-right { display: flex; align-items: center; gap: 10px; }
+  .team-tag {
+    font-size: 12px;
+    color: var(--text-muted);
+  }
+  .ps-tag {
+    font-size: 11px;
+    font-family: 'JetBrains Mono', monospace;
+    color: var(--accent);
+    background: var(--accent-dim);
+    padding: 3px 8px;
+    border-radius: var(--radius-sm);
+  }
+
+  /* ── LAYOUT ── */
+  .container { max-width: 1200px; margin: 0 auto; padding: 2rem; }
+
+  /* ── SUMMARY BAR ── */
+  .summary-bar {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1rem;
+    margin-bottom: 2rem;
+  }
+  .stat-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 1.25rem 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+  }
+  .stat-icon {
+    width: 40px; height: 40px;
+    border-radius: var(--radius-sm);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px;
+    flex-shrink: 0;
+  }
+  .stat-icon.red { background: var(--red-dim); }
+  .stat-icon.orange { background: var(--orange-dim); }
+  .stat-icon.yellow { background: var(--yellow-dim); }
+  .stat-icon.blue { background: #0D2647; }
+  .stat-num { font-size: 26px; font-weight: 700; line-height: 1; }
+  .stat-num.red { color: var(--red); }
+  .stat-num.orange { color: var(--orange); }
+  .stat-num.yellow { color: var(--yellow); }
+  .stat-num.blue { color: var(--blue); }
+  .stat-label { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+
+  /* ── TWO COLUMN LAYOUT ── */
+  .main-grid {
+    display: grid;
+    grid-template-columns: 1fr 340px;
+    gap: 1.5rem;
+    align-items: start;
+  }
+
+  /* ── SECTION HEADER ── */
+  .section-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1rem;
+  }
+  .section-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  /* ── FINDINGS TABLE ── */
+  .findings-panel {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+  }
+  .findings-header {
+    display: grid;
+    grid-template-columns: 48px 80px 1fr 120px;
+    padding: 10px 16px;
+    background: var(--surface2);
+    border-bottom: 1px solid var(--border);
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  .finding-row {
+    display: grid;
+    grid-template-columns: 48px 80px 1fr 120px;
+    padding: 14px 16px;
+    border-bottom: 1px solid var(--border);
+    cursor: pointer;
+    transition: background 0.15s;
+    align-items: center;
+  }
+  .finding-row:last-child { border-bottom: none; }
+  .finding-row:hover { background: var(--surface2); }
+  .finding-row.active { background: var(--surface2); border-left: 3px solid var(--accent); }
+  .finding-id {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--accent);
+  }
+  .sev-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 11px;
+    font-weight: 600;
+    padding: 3px 8px;
+    border-radius: 100px;
+  }
+  .sev-badge.critical { background: var(--red-dim); color: var(--red); }
+  .sev-badge.high { background: var(--orange-dim); color: var(--orange); }
+  .sev-badge.medium { background: var(--yellow-dim); color: var(--yellow); }
+  .sev-dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+  .finding-title { font-size: 13px; font-weight: 500; color: var(--text); }
+  .finding-sub { font-size: 11px; color: var(--text-muted); margin-top: 2px; font-family: 'JetBrains Mono', monospace; }
+  .cvss-score {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    font-weight: 600;
+    text-align: right;
+  }
+  .cvss-score.critical { color: var(--red); }
+  .cvss-score.high { color: var(--orange); }
+  .cvss-score.medium { color: var(--yellow); }
+
+  /* ── DETAIL PANEL ── */
+  .detail-panel {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    position: sticky;
+    top: 72px;
+  }
+  .detail-header {
+    padding: 14px 16px;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface2);
+    border-radius: var(--radius) var(--radius) 0 0;
+  }
+  .detail-header-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 6px;
+  }
+  .detail-id {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    color: var(--accent);
+    font-weight: 600;
+  }
+  .detail-title { font-size: 14px; font-weight: 600; color: var(--text); line-height: 1.4; }
+  .detail-body { padding: 16px; }
+  .detail-section { margin-bottom: 16px; }
+  .detail-section:last-child { margin-bottom: 0; }
+  .detail-label {
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    color: var(--text-dim);
+    margin-bottom: 6px;
+  }
+  .detail-value {
+    font-size: 12px;
+    color: var(--text-muted);
+    line-height: 1.5;
+  }
+  .detail-value code {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--blue);
+    background: #0D2647;
+    padding: 2px 6px;
+    border-radius: 3px;
+    display: block;
+    margin-top: 4px;
+    word-break: break-all;
+  }
+  .steps { list-style: none; counter-reset: steps; }
+  .steps li {
+    counter-increment: steps;
+    display: flex;
+    gap: 8px;
+    font-size: 12px;
+    color: var(--text-muted);
+    margin-bottom: 6px;
+    line-height: 1.5;
+  }
+  .steps li::before {
+    content: counter(steps);
+    width: 18px; height: 18px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 10px;
+    font-weight: 600;
+    color: var(--text-muted);
+    flex-shrink: 0;
+    margin-top: 1px;
+  }
+  .fix-box {
+    background: var(--accent-dim);
+    border: 1px solid #2EA043;
+    border-radius: var(--radius-sm);
+    padding: 10px 12px;
+    font-size: 12px;
+    color: var(--accent);
+    line-height: 1.5;
+  }
+
+  /* ── METHODOLOGY ── */
+  .methodology {
+    margin-top: 1.5rem;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 1.25rem 1.5rem;
+  }
+  .method-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1rem;
+    margin-top: 1rem;
+  }
+  .method-card {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 12px;
+  }
+  .method-num {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--text-dim);
+    margin-bottom: 4px;
+  }
+  .method-name {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text);
+    margin-bottom: 6px;
+  }
+  .method-desc { font-size: 11px; color: var(--text-muted); line-height: 1.5; }
+
+  /* ── FOOTER ── */
+  .footer {
+    margin-top: 2rem;
+    padding: 1rem 2rem;
+    border-top: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 11px;
+    color: var(--text-dim);
+  }
+
+  @media (max-width: 900px) {
+    .main-grid { grid-template-columns: 1fr; }
+    .summary-bar { grid-template-columns: repeat(2, 1fr); }
+    .method-grid { grid-template-columns: repeat(2, 1fr); }
+    .detail-panel { position: static; }
+  }
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header class="header">
+  <div class="header-left">
+    <div class="logo">Secure<span>Scope</span></div>
+    <div class="target-badge">worldmonitor.app</div>
+  </div>
+  <div class="header-right">
+    <span class="team-tag">Samosa Gang · IIIT Bangalore</span>
+    <span class="ps-tag">SIH26163</span>
+  </div>
+</header>
+
+<!-- MAIN -->
+<main class="container">
+
+  <!-- STAT SUMMARY -->
+  <div class="summary-bar">
+    <div class="stat-card">
+      <div class="stat-icon red">🔴</div>
+      <div>
+        <div class="stat-num red">3</div>
+        <div class="stat-label">Critical findings</div>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon orange">🟠</div>
+      <div>
+        <div class="stat-num orange">2</div>
+        <div class="stat-label">High findings</div>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon yellow">🟡</div>
+      <div>
+        <div class="stat-num yellow">1</div>
+        <div class="stat-label">Medium finding</div>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon blue">🔵</div>
+      <div>
+        <div class="stat-num blue">152</div>
+        <div class="stat-label">Unprotected endpoints</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MAIN GRID -->
+  <div class="main-grid">
+
+    <!-- LEFT: FINDINGS -->
+    <div>
+      <div class="section-header">
+        <span class="section-title">Vulnerability Report</span>
+        <span style="font-size:11px;color:var(--text-muted)">6 findings · OWASP Top 10</span>
+      </div>
+
+      <div class="findings-panel">
+        <div class="findings-header">
+          <span>ID</span>
+          <span>Severity</span>
+          <span>Finding</span>
+          <span style="text-align:right">CVSS Score</span>
+        </div>
+
+        <div class="finding-row active" onclick="showDetail(0)">
+          <span class="finding-id">F1</span>
+          <span class="sev-badge critical"><span class="sev-dot"></span>Critical</span>
+          <div>
+            <div class="finding-title">Military Theater Posture Exposed</div>
+            <div class="finding-sub">/api/military/v1/get-theater-posture</div>
+          </div>
+          <span class="cvss-score critical">9.1</span>
+        </div>
+
+        <div class="finding-row" onclick="showDetail(1)">
+          <span class="finding-id">F2</span>
+          <span class="sev-badge critical"><span class="sev-dot"></span>Critical</span>
+          <div>
+            <div class="finding-title">Cyber Threat Intelligence Exposed</div>
+            <div class="finding-sub">/api/cyber/v1/list-cyber-threats</div>
+          </div>
+          <span class="cvss-score critical">9.1</span>
+        </div>
+
+        <div class="finding-row" onclick="showDetail(2)">
+          <span class="finding-id">F3</span>
+          <span class="sev-badge critical"><span class="sev-dot"></span>Critical</span>
+          <div>
+            <div class="finding-title">DDoS Attack Intelligence Exposed</div>
+            <div class="finding-sub">/api/infrastructure/v1/list-internet-ddos-attacks</div>
+          </div>
+          <span class="cvss-score critical">8.6</span>
+        </div>
+
+        <div class="finding-row" onclick="showDetail(3)">
+          <span class="finding-id">F4</span>
+          <span class="sev-badge high"><span class="sev-dot"></span>High</span>
+          <div>
+            <div class="finding-title">Aviation Safety Data Exposed</div>
+            <div class="finding-sub">/api/aviation/v1/list-airport-delays</div>
+          </div>
+          <span class="cvss-score high">7.5</span>
+        </div>
+
+        <div class="finding-row" onclick="showDetail(4)">
+          <span class="finding-id">F5</span>
+          <span class="sev-badge high"><span class="sev-dot"></span>High</span>
+          <div>
+            <div class="finding-title">Systemic Auth Design Flaw</div>
+            <div class="finding-sub">152 of 214 endpoints unprotected</div>
+          </div>
+          <span class="cvss-score high">7.5</span>
+        </div>
+
+        <div class="finding-row" onclick="showDetail(5)">
+          <span class="finding-id">F6</span>
+          <span class="sev-badge medium"><span class="sev-dot"></span>Medium</span>
+          <div>
+            <div class="finding-title">Subscription Paywall Bypass</div>
+            <div class="finding-sub">Multiple market/intelligence endpoints</div>
+          </div>
+          <span class="cvss-score medium">5.3</span>
+        </div>
+      </div>
+
+      <!-- METHODOLOGY -->
+      <div class="methodology">
+        <div class="section-title">Assessment Methodology</div>
+        <div class="method-grid">
+          <div class="method-card">
+            <div class="method-num">01</div>
+            <div class="method-name">Reconnaissance</div>
+            <div class="method-desc">Mapped 214 endpoints from OpenAPI spec. Reviewed GitHub source code.</div>
+          </div>
+          <div class="method-card">
+            <div class="method-num">02</div>
+            <div class="method-name">Auth Testing</div>
+            <div class="method-desc">Tested every endpoint category for access control enforcement.</div>
+          </div>
+          <div class="method-card">
+            <div class="method-num">03</div>
+            <div class="method-name">API Security</div>
+            <div class="method-desc">Checked for broken object-level authorization and excessive data exposure.</div>
+          </div>
+          <div class="method-card">
+            <div class="method-num">04</div>
+            <div class="method-name">Reporting</div>
+            <div class="method-desc">CVSS scored findings with business impact and remediation roadmap.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- RIGHT: DETAIL PANEL -->
+    <div>
+      <div class="section-header">
+        <span class="section-title">Finding Detail</span>
+      </div>
+      <div class="detail-panel" id="detail-panel">
+        <div class="detail-header">
+          <div class="detail-header-top">
+            <span class="detail-id" id="d-id">F1</span>
+            <span class="sev-badge critical" id="d-badge"><span class="sev-dot"></span>Critical · CVSS 9.1</span>
+          </div>
+          <div class="detail-title" id="d-title">Military Theater Posture Exposed</div>
+        </div>
+        <div class="detail-body">
+          <div class="detail-section">
+            <div class="detail-label">Affected Component</div>
+            <div class="detail-value" id="d-component">Authorization layer — Military Intelligence API</div>
+          </div>
+          <div class="detail-section">
+            <div class="detail-label">Endpoint</div>
+            <div class="detail-value"><code id="d-endpoint">/api/military/v1/get-theater-posture</code></div>
+          </div>
+          <div class="detail-section">
+            <div class="detail-label">Description</div>
+            <div class="detail-value" id="d-desc">Real-time military posture for 9 global theaters — Iran, Taiwan, South China Sea, Black Sea, Korea, Baltic, East Med, Israel-Gaza, Yemen — returned with zero authentication.</div>
+          </div>
+          <div class="detail-section">
+            <div class="detail-label">Steps to Reproduce</div>
+            <ol class="steps" id="d-steps">
+              <li>Open any browser with no account or login</li>
+              <li>Navigate directly to the endpoint URL</li>
+              <li>Full military theater data returned immediately</li>
+            </ol>
+          </div>
+          <div class="detail-section">
+            <div class="detail-label">Business Impact</div>
+            <div class="detail-value" id="d-impact">Nation-states spend billions gathering this intelligence. Freely accessible to any actor worldwide including adversarial states — a direct national security risk.</div>
+          </div>
+          <div class="detail-section">
+            <div class="detail-label">Remediation</div>
+            <div class="fix-box" id="d-fix">Enforce authentication middleware on all /api/military/* routes at the API gateway level. Require valid X-WorldMonitor-Key header.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</main>
+
+<!-- FOOTER -->
+<footer class="footer">
+  <span>SecureScope · Security Assessment of World Monitor Application</span>
+  <span>Samosa Gang · IIIT Bangalore · SIH26163 · NTRO</span>
+</footer>
+
+<script>
+const findings = [
+  {
+    id: 'F1', sev: 'critical', cvss: '9.1',
+    title: 'Military Theater Posture Exposed',
+    component: 'Authorization layer — Military Intelligence API',
+    endpoint: '/api/military/v1/get-theater-posture',
+    desc: 'Real-time military posture for 9 global theaters — Iran, Taiwan, South China Sea, Black Sea, Korea, Baltic, East Med, Israel-Gaza, Yemen — returned with zero authentication.',
+    steps: ['Open any browser with no account or login', 'Navigate directly to the endpoint URL', 'Full military theater data returned immediately'],
+    impact: 'Nation-states spend billions gathering this intelligence. Freely accessible to any actor worldwide including adversarial states — a direct national security risk.',
+    fix: 'Enforce authentication middleware on all /api/military/* routes at the API gateway level. Require valid X-WorldMonitor-Key header.'
+  },
+  {
+    id: 'F2', sev: 'critical', cvss: '9.1',
+    title: 'Cyber Threat Intelligence Exposed',
+    component: 'Authorization layer — Cyber Intelligence API',
+    endpoint: '/api/cyber/v1/list-cyber-threats',
+    desc: '512 active global cyber threats with live malware host IPs, coordinates, malware family classifications, and severity levels returned without any credentials.',
+    steps: ['Open any browser with no account or login', 'Navigate directly to the endpoint URL', '512 active threats with full intelligence data returned'],
+    impact: 'Attackers can access the same threat intelligence as defenders, enabling them to monitor detection patterns and adjust attack strategies accordingly.',
+    fix: 'Require valid API key authentication on all /api/cyber/* endpoints. Implement subscription tier enforcement at the gateway level.'
+  },
+  {
+    id: 'F3', sev: 'critical', cvss: '8.6',
+    title: 'DDoS Attack Intelligence Exposed',
+    component: 'Authorization layer — Infrastructure API',
+    endpoint: '/api/infrastructure/v1/list-internet-ddos-attacks',
+    desc: 'Real-time global DDoS attack vectors, protocol breakdowns (Mirai flood, SYN flood, DNS amplification), and target location data returned without authentication.',
+    steps: ['Open any browser with no account or login', 'Navigate directly to the endpoint URL', 'Live DDoS attack data for the past 7 days returned'],
+    impact: 'Threat actors can monitor active DDoS campaigns globally and adapt their own attack strategies based on live intelligence.',
+    fix: 'Enforce authentication on all /api/infrastructure/* endpoints. Rate-limit unauthenticated requests at the edge.'
+  },
+  {
+    id: 'F4', sev: 'high', cvss: '7.5',
+    title: 'Aviation Safety Data Exposed',
+    component: 'Authorization layer — Aviation API',
+    endpoint: '/api/aviation/v1/list-airport-delays',
+    desc: 'Real-time airport closure and delay data including ground stops, severity levels, and operational status for major airports returned without credentials.',
+    steps: ['Open any browser with no account or login', 'Navigate directly to the endpoint URL', 'Live airport operational data returned (LAX ground stop confirmed)'],
+    impact: 'Operational aviation safety data accessible without authorization, potentially usable for travel disruption intelligence.',
+    fix: 'Require authentication on all aviation service endpoints. Separate public preview data from full operational payload responses.'
+  },
+  {
+    id: 'F5', sev: 'high', cvss: '7.5',
+    title: 'Systemic API Authentication Design Flaw',
+    component: 'API Gateway — Authentication Middleware',
+    endpoint: '152 of 214 endpoints (OpenAPI spec analysis)',
+    desc: 'Analysis of the published OpenAPI specification confirms 152 out of 214 total endpoints have no security field defined — meaning authentication is not enforced at the design level across 71% of the API surface.',
+    steps: ['Download openapi.yaml from worldmonitor.app/openapi.yaml', 'Search for any /api/* endpoint definition', 'Observe: no security field present on 152 endpoints', 'Compare with properly secured endpoints that include the security field'],
+    impact: 'This is not an isolated misconfiguration but an architecture-level authentication gap. Any new endpoints added will be unauthenticated by default.',
+    fix: 'Implement a global authentication middleware at the API gateway that applies to all routes by default. Explicitly opt-out only truly public endpoints rather than opting-in auth per route.'
+  },
+  {
+    id: 'F6', sev: 'medium', cvss: '5.3',
+    title: 'Subscription Paywall Bypass',
+    component: 'Authorization layer — Market and Intelligence APIs',
+    endpoint: 'Multiple: /api/market/v1/*, /api/intelligence/v1/*',
+    desc: 'Pro-tier subscription data including cryptocurrency prices, market quotes, commodity data, and geopolitical risk scores accessible without a valid subscription or API key.',
+    steps: ['Visit worldmonitor.app — note Pro subscription is required', 'Without logging in, navigate directly to any market endpoint', 'Full subscription-tier data returned for free'],
+    impact: 'The entire subscription revenue model is undermined. Pro-tier data accessible to anyone who knows the API endpoint structure, bypassing all paywall controls.',
+    fix: 'Enforce subscription entitlement checks at the API gateway. Validate X-WorldMonitor-Key against subscription tier before serving data. Return 402 for unauthenticated requests to paid endpoints.'
+  }
+];
+
+const sevColors = {
+  critical: { badge: 'critical', label: 'Critical' },
+  high: { badge: 'high', label: 'High' },
+  medium: { badge: 'medium', label: 'Medium' }
+};
+
+function showDetail(index) {
+  const f = findings[index];
+  const rows = document.querySelectorAll('.finding-row');
+  rows.forEach((r, i) => r.classList.toggle('active', i === index));
+
+  document.getElementById('d-id').textContent = f.id;
+  document.getElementById('d-title').textContent = f.title;
+  document.getElementById('d-component').textContent = f.component;
+  document.getElementById('d-endpoint').textContent = f.endpoint;
+  document.getElementById('d-desc').textContent = f.desc;
+  document.getElementById('d-impact').textContent = f.impact;
+  document.getElementById('d-fix').textContent = f.fix;
+
+  const badge = document.getElementById('d-badge');
+  badge.className = `sev-badge ${sevColors[f.sev].badge}`;
+  badge.innerHTML = `<span class="sev-dot"></span>${sevColors[f.sev].label} · CVSS ${f.cvss}`;
+
+  const stepsEl = document.getElementById('d-steps');
+  stepsEl.innerHTML = f.steps.map(s => `<li>${s}</li>`).join('');
+}
+</script>
+</body>
+</html>
